@@ -125,3 +125,56 @@ func TestSolution1(t *testing.T) {
 		})
 	}
 }
+
+func TestDoSolution2(t *testing.T) {
+	type args struct {
+		raw string
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			"it should return the provided example result",
+			args{`1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000`},
+			45000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DoSolution2(tt.args.raw); got != tt.want {
+				t.Errorf("DoSolution2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSolution2(t *testing.T) {
+	tests := []struct {
+		name string
+		want int
+	}{
+		{"result for solution2", 209481},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Solution2(); got != tt.want {
+				t.Errorf("Solution2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
