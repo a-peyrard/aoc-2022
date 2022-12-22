@@ -42,6 +42,22 @@ you with a score of 1 (1 + 0).
 In this example, if you were to follow the strategy guide, you would get a total score of 15 (8 + 1 + 6).
 What would your total score be if everything goes exactly according to your strategy guide?
 
+--- Part Two ---
+
+The Elf finishes helping with the tent and sneaks back over to you. "Anyway, the second column says how the round needs
+to end: X means you need to lose, Y means you need to end the round in a draw, and Z means you need to win. Good luck!"
+The total score is still calculated in the same way, but now you need to figure out what shape to choose so the round
+ends as indicated. The example above now goes like this:
+    In the first round, your opponent will choose Rock (A), and you need the round to end in a draw (Y), so you also
+choose Rock. This gives you a score of 1 + 3 = 4.
+    In the second round, your opponent will choose Paper (B), and you choose Rock so you lose (X) with a score
+of 1 + 0 = 1.
+    In the third round, you will defeat your opponent's Scissors with Rock for a score of 1 + 6 = 7.
+
+Now that you're correctly decrypting the ultra top secret strategy guide, you would get a total score of 12.
+Following the Elf's instructions for the second column, what would your total score be if everything goes exactly
+according to your strategy guide?
+
 */
 
 type Move int
@@ -65,17 +81,23 @@ type Game struct {
 	my    Move
 }
 
+var winMoveAgainst = map[Move]Move{
+	Rock:     Paper,
+	Scissors: Rock,
+	Paper:    Scissors,
+}
+
+var loseMoveAgainst = map[Move]Move{
+	Rock:     Scissors,
+	Scissors: Paper,
+	Paper:    Rock,
+}
+
 func (g *Game) result() Result {
 	if g.other == g.my {
 		return Draw
 	}
-	if g.other == Rock && g.my == Paper {
-		return Win
-	}
-	if g.other == Scissors && g.my == Rock {
-		return Win
-	}
-	if g.other == Paper && g.my == Scissors {
+	if winMoveAgainst[g.other] == g.my {
 		return Win
 	}
 	return Lose
@@ -85,16 +107,17 @@ func (g *Game) Score() int {
 	return int(g.my) + int(g.result())
 }
 
-func Parse(input string) []Game {
+func parse(input string, myMoveParser func(Move, string) Move) []Game {
 	var res []Game
 	sc := bufio.NewScanner(strings.NewReader(input))
 	for sc.Scan() {
 		tokens := strings.Fields(sc.Text())
+		otherMove := convertOtherMove(tokens[0])
 		res = append(
 			res,
 			Game{
-				other: convertOtherMove(tokens[0]),
-				my:    convertMyMove(tokens[1]),
+				other: otherMove,
+				my:    myMoveParser(otherMove, tokens[1]),
 			},
 		)
 	}
@@ -114,7 +137,7 @@ func convertOtherMove(m string) Move {
 	}
 }
 
-func convertMyMove(m string) Move {
+func convertMyMove(_ Move, m string) Move {
 	switch m {
 	case "X":
 		return Rock
@@ -124,6 +147,22 @@ func convertMyMove(m string) Move {
 		return Scissors
 	default:
 		panic(fmt.Sprintf("Unknown move for me: %s", m))
+	}
+}
+
+func guessMyMove(otherMove Move, m string) Move {
+	switch m {
+	case "X":
+		// Lose
+		return loseMoveAgainst[otherMove]
+	case "Y":
+		// Draw
+		return otherMove
+	case "Z":
+		// Win
+		return winMoveAgainst[otherMove]
+	default:
+		panic(fmt.Sprintf("Unknown result for me: %s", m))
 	}
 }
 
@@ -138,10 +177,20 @@ func ComputeScore(games []Game) int {
 
 func DoSolution1(raw string) int {
 	return ComputeScore(
-		Parse(raw),
+		parse(raw, convertMyMove),
 	)
 }
 
 func Solution1() int {
 	return DoSolution1(util.GetInputContent())
+}
+
+func DoSolution2(raw string) int {
+	return ComputeScore(
+		parse(raw, guessMyMove),
+	)
+}
+
+func Solution2() int {
+	return DoSolution2(util.GetInputContent())
 }
