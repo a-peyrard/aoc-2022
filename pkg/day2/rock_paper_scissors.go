@@ -1,9 +1,9 @@
 package day2
 
 import (
+	"aoc2022/pkg/util"
 	"bufio"
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -142,18 +142,6 @@ func DoSolution1(raw string) int {
 	)
 }
 
-func GetInputContent() string {
-	data, err := os.ReadFile("input.txt")
-	check(err)
-	return string(data)
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func Solution1() int {
-	return DoSolution1(GetInputContent())
+	return DoSolution1(util.GetInputContent())
 }

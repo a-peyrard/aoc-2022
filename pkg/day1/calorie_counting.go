@@ -4,7 +4,6 @@ import (
 	"aoc2022/pkg/util"
 	"bufio"
 	"container/heap"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -109,12 +108,6 @@ func sumArray(arr []int) int {
 	return result
 }
 
-func GetInputContent() string {
-	data, err := os.ReadFile("input.txt")
-	check(err)
-	return string(data)
-}
-
 func DoSolution1(raw string) int {
 	return FindMaxCalories(
 		Parse(raw),
@@ -122,13 +115,7 @@ func DoSolution1(raw string) int {
 }
 
 func Solution1() int {
-	return DoSolution1(GetInputContent())
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
+	return DoSolution1(util.GetInputContent())
 }
 
 func Find3MaxCalories(elvesPkg [][]int) int {
@@ -154,5 +141,5 @@ func DoSolution2(raw string) int {
 }
 
 func Solution2() int {
-	return DoSolution2(GetInputContent())
+	return DoSolution2(util.GetInputContent())
 }
