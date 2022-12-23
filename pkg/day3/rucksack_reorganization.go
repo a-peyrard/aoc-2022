@@ -3,6 +3,8 @@ package day3
 import (
 	"aoc2022/pkg/util"
 	"bufio"
+	"fmt"
+	"golang.org/x/exp/maps"
 	"strings"
 )
 
@@ -43,6 +45,35 @@ In the above example, the priority of the item type that appears in both compart
 (L), 42 (P), 22 (v), 20 (t), and 19 (s); the sum of these is 157. Find the item type that appears in both compartments
 of each rucksack. What is the sum of the priorities of those item types?
 
+--- Part Two ---
+
+As you finish identifying the misplaced items, the Elves come to you with another issue. For safety, the Elves are
+divided into groups of three. Every Elf carries a badge that identifies their group. For efficiency, within each group
+of three Elves, the badge is the only item type carried by all three Elves. That is, if a group's badge is item type B,
+then all three Elves will have item type B somewhere in their rucksack, and at most two of the Elves will be carrying
+any other item type. The problem is that someone forgot to put this year's updated authenticity sticker on the badges.
+All of the badges need to be pulled out of the rucksacks so the new authenticity stickers can be attached. Additionally,
+nobody wrote down which item type corresponds to each group's badges. The only way to tell which item type is the right
+one is by finding the one item type that is common between all three Elves in each group. Every set of three lines in
+your list corresponds to a single group, but each group can have a different badge item type. So, in the above example,
+the first group's rucksacks are the first three lines:
+
+vJrwpWtwJgWrhcsFMMfFFhFp
+jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+PmmdzqPrVvPwwTWBwg
+
+And the second group's rucksacks are the next three lines:
+
+wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+ttgJtRGJQctTZtZT
+CrZsJsPPZsGzwwsLwLmpwMDw
+
+In the first group, the only item type that appears in all three rucksacks is lowercase r; this must be their badges. In
+the second group, their badge item type must be Z. Priorities for these items must still be found to organize the
+sticker attachment efforts: here, they are 18 (r) for the first group and 52 (Z) for the second group. The sum of these
+is 70. Find the item type that corresponds to the badges of each three-Elf group. What is the sum of the priorities of
+those item types?
+
 */
 
 type Rucksack struct {
@@ -51,13 +82,35 @@ type Rucksack struct {
 }
 
 func (r *Rucksack) findDuplicate() byte {
-	for element := range r.first {
-		_, exist := r.second[element]
+	duplicates := findDuplicateInMaps(r.first, r.second)
+	for key := range duplicates {
+		return key
+	}
+	panic(fmt.Sprintf("Unable to find a duplicate from: %#v", r))
+}
+
+// we might have multiple common chars?! so we should return a map(i.e. set)
+func (r *Rucksack) findCommon(other *Rucksack) map[byte]struct{} {
+	allDuplicates := map[byte]struct{}{}
+
+	maps.Copy(allDuplicates, findDuplicateInMaps(r.first, other.first))
+	maps.Copy(allDuplicates, findDuplicateInMaps(r.first, other.second))
+	maps.Copy(allDuplicates, findDuplicateInMaps(r.second, other.first))
+	maps.Copy(allDuplicates, findDuplicateInMaps(r.second, other.second))
+
+	return allDuplicates
+}
+
+func findDuplicateInMaps(first, second map[byte]int) map[byte]struct{} {
+	var exist bool
+	duplicates := map[byte]struct{}{}
+	for element := range first {
+		_, exist = second[element]
 		if exist {
-			return element
+			duplicates[element] = struct{}{}
 		}
 	}
-	return 0
+	return duplicates
 }
 
 func priority(item byte) int {
@@ -106,4 +159,29 @@ func DoSolution1(raw string) int {
 
 func Solution1() int {
 	return DoSolution1(util.GetInputContent())
+}
+
+func findBadgeForGroup(r1 *Rucksack, r2 *Rucksack, r3 *Rucksack) byte {
+	common := r1.findCommon(r2)
+	common = util.Intersect(common, r2.findCommon(r3))
+	common = util.Intersect(common, r3.findCommon(r1))
+	for key := range common {
+		return key
+	}
+	panic(fmt.Sprintf("Unable to find a badge in group %#v %#v %#v", r1, r2, r3))
+}
+
+func DoSolution2(raw string) int {
+	rucksacks := parse(raw)
+	res := 0
+	for i := 0; i < len(rucksacks); i += 3 {
+		badge := findBadgeForGroup(&rucksacks[i], &rucksacks[i+1], &rucksacks[i+2])
+		res += priority(badge)
+	}
+
+	return res
+}
+
+func Solution2() int {
+	return DoSolution2(util.GetInputContent())
 }
