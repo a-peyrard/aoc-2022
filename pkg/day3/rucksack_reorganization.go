@@ -2,6 +2,7 @@ package day3
 
 import (
 	"aoc2022/pkg/util"
+	"aoc2022/pkg/util/collection"
 	"bufio"
 	"fmt"
 	"golang.org/x/exp/maps"
@@ -163,8 +164,8 @@ func Solution1() int {
 
 func findBadgeForGroup(r1 *Rucksack, r2 *Rucksack, r3 *Rucksack) byte {
 	common := r1.findCommon(r2)
-	common = util.Intersect(common, r2.findCommon(r3))
-	common = util.Intersect(common, r3.findCommon(r1))
+	common = collection.Intersect(common, r2.findCommon(r3))
+	common = collection.Intersect(common, r3.findCommon(r1))
 	for key := range common {
 		return key
 	}
