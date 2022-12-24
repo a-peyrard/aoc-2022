@@ -57,6 +57,21 @@ would be exclusively cleaning sections their partner will already be cleaning, s
 reconsideration. In this example, there are 2 such pairs. In how many assignment pairs does one range fully contain the
 other?
 
+--- Part Two ---
+
+It seems like there is still quite a bit of duplicate work planned. Instead, the Elves would like to know the number of
+pairs that overlap at all. In the above example, the first two pairs (2-4,6-8 and 2-3,4-5) don't overlap, while the
+remaining four pairs (5-7,7-9, 2-8,3-7, 6-6,4-6, and 2-6,4-8) do overlap:
+
+    5-7,7-9 overlaps in a single section, 7.
+    2-8,3-7 overlaps all of the sections 3 through 7.
+    6-6,4-6 overlaps in a single section, 6.
+    2-6,4-8 overlaps in sections 4, 5, and 6.
+
+So, in this example, the number of overlapping assignment pairs is 4.
+In how many assignment pairs do the ranges overlap?
+
+
 */
 
 type Section struct {
@@ -73,8 +88,27 @@ func (s *Section) fullyOverlap(other *Section) bool {
 	return s.start <= other.start && s.end >= other.end
 }
 
-func (p *Pair) sectionsFullyOverlap() bool {
-	return p.first.fullyOverlap(&p.second) || p.second.fullyOverlap(&p.first)
+func (s *Section) overlap(other *Section) bool {
+	// |--------------|
+	//            |----------|
+	// or
+	//                  |--------------|
+	//            |----------|
+	//
+	if s.start >= other.end && s.end <= other.end {
+		return true
+	}
+	if other.start <= s.start && s.start <= other.end {
+		return true
+	}
+	return false
+}
+
+func (p *Pair) sectionsOverlap(fully bool) bool {
+	if fully {
+		return p.first.fullyOverlap(&p.second) || p.second.fullyOverlap(&p.first)
+	}
+	return p.first.overlap(&p.second) || p.second.overlap(&p.first)
 }
 
 func parse(input string) []Pair {
@@ -101,11 +135,11 @@ func parseSection(rawSection string) Section {
 	return Section{start, end}
 }
 
-func DoSolution1(raw string) int {
+func doSolutionGeneric(raw string, fullOverlap bool) int {
 	pairs := parse(raw)
 	res := 0
 	for _, pair := range pairs {
-		if pair.sectionsFullyOverlap() {
+		if pair.sectionsOverlap(fullOverlap) {
 			res += 1
 		}
 	}
@@ -113,6 +147,18 @@ func DoSolution1(raw string) int {
 	return res
 }
 
+func DoSolution1(raw string) int {
+	return doSolutionGeneric(raw, true)
+}
+
 func Solution1() int {
 	return DoSolution1(util.GetInputContent())
+}
+
+func DoSolution2(raw string) int {
+	return doSolutionGeneric(raw, false)
+}
+
+func Solution2() int {
+	return DoSolution2(util.GetInputContent())
 }
