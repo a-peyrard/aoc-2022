@@ -40,8 +40,8 @@ How many characters need to be processed before the first start-of-packet marker
 
 */
 
-func findMarker(stream string) int {
-	markerSize, chars := 4, map[byte]int{}
+func findMarker(stream string, markerSize int) int {
+	chars := map[byte]int{}
 	for i := 0; i < markerSize; i++ {
 		increase(chars, stream[i])
 	}
@@ -71,5 +71,9 @@ func decrease(chars map[byte]int, key byte) {
 }
 
 func Solution1() int {
-	return findMarker(util.GetInputContent())
+	return findMarker(util.GetInputContent(), 4)
+}
+
+func Solution2() int {
+	return findMarker(util.GetInputContent(), 14)
 }
