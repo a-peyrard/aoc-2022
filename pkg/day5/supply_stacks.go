@@ -136,7 +136,7 @@ type stacks struct {
 	stacks []*collection.Stack[byte]
 }
 
-func (s *stacks) apply(m *move) {
+func (s *stacks) apply9000(m *move) {
 	for i := 0; i < m.amount; i++ {
 		s.stacks[m.to-1].Push(s.stacks[m.from-1].Pop())
 	}
@@ -212,20 +212,20 @@ func parseMove(line string) move {
 	return move{amount, from, to}
 }
 
-func DoSolution1(raw string) string {
+func doSolutionGen(raw string, apply func(*stacks, *move)) string {
 	stacks, moves := parse(raw)
 	for _, move := range moves {
-		stacks.apply(&move)
+		apply(stacks, &move)
 	}
 	return stacks.read()
 }
 
+func DoSolution1(raw string) string {
+	return doSolutionGen(raw, (*stacks).apply9000)
+}
+
 func DoSolution2(raw string) string {
-	stacks, moves := parse(raw)
-	for _, move := range moves {
-		stacks.apply9001(&move)
-	}
-	return stacks.read()
+	return doSolutionGen(raw, (*stacks).apply9001)
 }
 
 func Solution1() string {
