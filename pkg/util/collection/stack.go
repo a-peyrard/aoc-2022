@@ -52,6 +52,13 @@ func (s *Stack[T]) Pop() T {
 	return head
 }
 
+func (s *Stack[T]) RemoveTill(predicate func(T) bool) bool {
+	for s.Length() > 0 && predicate(s.Peek()) {
+		s.Pop()
+	}
+	return s.IsEmpty()
+}
+
 func (s *Stack[T]) Peek() T {
 	return s.inner[len(s.inner)-1]
 }
@@ -69,5 +76,11 @@ func (s *Stack[T]) Reverse() *Stack[T] {
 	for i := 0; i < length/2; i++ {
 		s.inner[i], s.inner[length-1-i] = s.inner[length-1-i], s.inner[i]
 	}
+	return s
+}
+
+func (s *Stack[T]) Clear() *Stack[T] {
+	s.inner = make([]T, 0)
+
 	return s
 }
