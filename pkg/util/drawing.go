@@ -1,6 +1,9 @@
 package util
 
-import "strings"
+import (
+	"aoc2022/pkg/util/collection"
+	"strings"
+)
 
 type Drawing struct {
 	inner   [][]byte
@@ -63,4 +66,14 @@ func (d *Drawing) String() string {
 		}
 	}
 	return sb.String()
+}
+
+func DrawMatrix[T any](m *collection.Matrix[T], toByte func(T, int, int) byte) *Drawing {
+	d := InitDrawing(m.Width(), m.Height())
+	for y := 0; y < m.Height(); y++ {
+		for x := 0; x < m.Width(); x++ {
+			d.DrawAt(toByte(m.ValueAt(x, y), x, y), x, m.Height()-1-y)
+		}
+	}
+	return d
 }
