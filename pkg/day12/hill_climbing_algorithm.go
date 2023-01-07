@@ -219,3 +219,14 @@ func doSolution1(raw string) int {
 func Solution1() int {
 	return doSolution1(util.GetInputContent())
 }
+
+func doSolution2(raw string) int {
+	heightmap, _, end := parse(raw)
+	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+		return heightmap.value(c) == 'a'
+	})
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent())
+}
