@@ -47,6 +47,32 @@ right (>). The location that should get the best signal is still E, and . marks 
 goal in 31 steps, the fewest possible. What is the fewest steps required to move from your current position to the
 location that should get the best signal?
 
+--- Part Two ---
+
+As you walk up the hill, you suspect that the Elves will want to turn this into a hiking trail. The beginning isn't very
+scenic, though; perhaps you can find a better starting point. To maximize exercise while hiking, the trail should start
+as low as possible: elevation a. The goal is still the square marked E. However, the trail should still be direct,
+taking the fewest steps to reach its goal. So, you'll need to find the shortest path from any square at elevation a to
+the square marked E. Again consider the example from above:
+
+Sabqponm
+abcryxxl
+accszExk
+acctuvwj
+abdefghi
+
+Now, there are six choices for starting position (five marked a, plus the square marked S that counts as being at
+elevation a). If you start at the bottom-left square, you can reach the goal most quickly:
+
+...v<<<<
+...vv<<^
+...v>E^^
+.>v>>>^^
+>^>>>>>^
+
+This path reaches the goal in only 29 steps, the fewest possible. What is the fewest steps required to move starting
+from any square with elevation a to the location that should get the best signal?
+
 */
 
 const Debug = false
@@ -78,10 +104,10 @@ func (h *heightmap) valueAt(x, y int) byte {
 
 func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordinate) {
 	var (
-		res           heightmap
-		line          string
-		row           []byte
-		start, target *collection.Coordinate
+		res        heightmap
+		line       string
+		row        []byte
+		start, end *collection.Coordinate
 	)
 	sc := bufio.NewScanner(strings.NewReader(input))
 	for sc.Scan() {
@@ -92,16 +118,16 @@ func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordin
 			if line[i] == 'S' {
 				start = &collection.Coordinate{X: i, Y: len(res)}
 			} else if line[i] == 'E' {
-				target = &collection.Coordinate{X: i, Y: len(res)}
+				end = &collection.Coordinate{X: i, Y: len(res)}
 			}
 		}
 		res = append(res, row)
 	}
 
-	return res, start, target
+	return res, start, end
 }
 
-func findShortestPath(heightmap heightmap, start *collection.Coordinate, target *collection.Coordinate) int {
+func findShortestPath(heightmap heightmap, start *collection.Coordinate, isTarget func(*collection.Coordinate) bool) int {
 	dist := collection.CreateMatrix[int](heightmap.width(), heightmap.height(), math.MaxInt)
 	dist.PutAtC(start, 0)
 	prev := collection.CreateMatrix[*collection.Coordinate](heightmap.width(), heightmap.height(), nil)
@@ -115,13 +141,15 @@ func findShortestPath(heightmap heightmap, start *collection.Coordinate, target 
 		current   *collection.Item[*collection.Coordinate]
 		neighbors []*collection.Coordinate
 		alt       int
+		target    *collection.Coordinate
 	)
 
 	visited := collection.NewSet[collection.Coordinate]()
 	for queue.Len() > 0 {
 		current = heap.Pop(&queue).(*collection.Item[*collection.Coordinate])
 		visited.Add(*current.GetValue())
-		if *current.GetValue() == *target {
+		if isTarget(current.GetValue()) {
+			target = current.GetValue()
 			break
 		}
 
@@ -158,19 +186,19 @@ func extractNeighbors(heightmap heightmap, c *collection.Coordinate) []*collecti
 	neighbors := make([]*collection.Coordinate, 0)
 	value := heightmap.value(c)
 	// North
-	if c.Y > 0 && isWalkable(value, heightmap.valueAt(c.X, c.Y-1)) {
+	if c.Y > 0 && isWalkable(heightmap.valueAt(c.X, c.Y-1), value) {
 		neighbors = append(neighbors, &collection.Coordinate{X: c.X, Y: c.Y - 1})
 	}
 	// East
-	if c.X < heightmap.width()-1 && isWalkable(value, heightmap.valueAt(c.X+1, c.Y)) {
+	if c.X < heightmap.width()-1 && isWalkable(heightmap.valueAt(c.X+1, c.Y), value) {
 		neighbors = append(neighbors, &collection.Coordinate{X: c.X + 1, Y: c.Y})
 	}
 	// South
-	if c.Y < heightmap.height()-1 && isWalkable(value, heightmap.valueAt(c.X, c.Y+1)) {
+	if c.Y < heightmap.height()-1 && isWalkable(heightmap.valueAt(c.X, c.Y+1), value) {
 		neighbors = append(neighbors, &collection.Coordinate{X: c.X, Y: c.Y + 1})
 	}
 	// West
-	if c.X > 0 && isWalkable(value, heightmap.valueAt(c.X-1, c.Y)) {
+	if c.X > 0 && isWalkable(heightmap.valueAt(c.X-1, c.Y), value) {
 		neighbors = append(neighbors, &collection.Coordinate{X: c.X - 1, Y: c.Y})
 	}
 
@@ -182,9 +210,23 @@ func isWalkable(origin byte, dest byte) bool {
 }
 
 func doSolution1(raw string) int {
-	return findShortestPath(parse(raw))
+	heightmap, start, end := parse(raw)
+	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+		return *c == *start
+	})
 }
 
 func Solution1() int {
 	return doSolution1(util.GetInputContent())
+}
+
+func doSolution2(raw string) int {
+	heightmap, _, end := parse(raw)
+	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+		return heightmap.value(c) == 'a'
+	})
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent())
 }
