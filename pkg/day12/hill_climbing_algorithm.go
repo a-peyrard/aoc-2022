@@ -127,7 +127,7 @@ func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordin
 	return res, start, end
 }
 
-func findShortestPath(heightmap heightmap, start *collection.Coordinate, target *collection.Coordinate) int {
+func findShortestPath(heightmap heightmap, start *collection.Coordinate, isTarget func(*collection.Coordinate) bool) int {
 	dist := collection.CreateMatrix[int](heightmap.width(), heightmap.height(), math.MaxInt)
 	dist.PutAtC(start, 0)
 	prev := collection.CreateMatrix[*collection.Coordinate](heightmap.width(), heightmap.height(), nil)
@@ -141,13 +141,15 @@ func findShortestPath(heightmap heightmap, start *collection.Coordinate, target 
 		current   *collection.Item[*collection.Coordinate]
 		neighbors []*collection.Coordinate
 		alt       int
+		target    *collection.Coordinate
 	)
 
 	visited := collection.NewSet[collection.Coordinate]()
 	for queue.Len() > 0 {
 		current = heap.Pop(&queue).(*collection.Item[*collection.Coordinate])
 		visited.Add(*current.GetValue())
-		if *current.GetValue() == *target {
+		if isTarget(current.GetValue()) {
+			target = current.GetValue()
 			break
 		}
 
@@ -209,7 +211,9 @@ func isWalkable(origin byte, dest byte) bool {
 
 func doSolution1(raw string) int {
 	heightmap, start, end := parse(raw)
-	return findShortestPath(heightmap, end, start)
+	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+		return *c == *start
+	})
 }
 
 func Solution1() int {
