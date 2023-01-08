@@ -205,3 +205,43 @@ func Test_pairOfPackets_areInOrder(t *testing.T) {
 		})
 	}
 }
+
+func Test_doSolution2(t *testing.T) {
+	type args struct {
+		raw string
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			"it should return the provided example result",
+			args{InputExample},
+			140,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := doSolution2(tt.args.raw); got != tt.want {
+				t.Errorf("doSolution2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSolution2(t *testing.T) {
+	tests := []struct {
+		name string
+		want int
+	}{
+		{"result for solution2", 29025},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Solution2(); got != tt.want {
+				t.Errorf("Solution2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
