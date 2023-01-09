@@ -6,9 +6,6 @@ const InputExample = `498,4 -> 498,6 -> 496,6
 503,4 -> 502,4 -> 502,9 -> 494,9`
 
 func Test_doSolution1(t *testing.T) {
-	// fixme
-	t.Skip("Skipping wip method")
-
 	type args struct {
 		raw string
 	}
@@ -33,14 +30,11 @@ func Test_doSolution1(t *testing.T) {
 }
 
 func TestSolution1(t *testing.T) {
-	// fixme
-	t.Skip("Skipping wip method")
-
 	tests := []struct {
 		name string
 		want int
 	}{
-		{"result for solution1", 5938},
+		{"result for solution1", 799},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -60,6 +60,14 @@ func InitDrawingTopToBottom(width int, height int) *Drawing {
 	}
 }
 
+func (d *Drawing) Height() int {
+	return d.height
+}
+
+func (d *Drawing) Width() int {
+	return d.width
+}
+
 func (d *Drawing) Fill(char byte) *Drawing {
 	for i := 0; i < d.height; i++ {
 		for j := 0; j < d.width; j++ {

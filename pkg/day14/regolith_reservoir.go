@@ -140,6 +140,8 @@ abyss below?
 
 */
 
+const Debug = true
+
 func parse(input string) ([][]collection.Coordinate, int, int) {
 	var (
 		res            [][]collection.Coordinate
@@ -177,6 +179,49 @@ func parseCoordinate(rawCoordinate string) collection.Coordinate {
 	}
 }
 
+func dropSand(drawing *util.Drawing, from collection.Coordinate) bool {
+	var (
+		next    = from
+		canMove = true
+		canRest = false
+	)
+	for canMove {
+		next, canMove, canRest = advanceSand(drawing, next)
+	}
+
+	if canRest {
+		drawing.DrawAt('o', next.X, next.Y)
+	}
+
+	return canRest
+}
+
+// return is:
+// - the next coordinate where to go,
+// - can we still move
+// - did we found a place where to rest?
+func advanceSand(drawing *util.Drawing, current collection.Coordinate) (collection.Coordinate, bool, bool) {
+	if current.Y+1 > drawing.Height()-1 {
+		return current, false, false // we reached the bottom
+	}
+
+	// first try to go down
+	if drawing.ValueAt(current.X, current.Y+1) == '.' {
+		return collection.Coordinate{X: current.X, Y: current.Y + 1}, true, false
+	}
+	// then try to go diagonal left
+	if current.X > 0 && drawing.ValueAt(current.X-1, current.Y+1) == '.' {
+		return collection.Coordinate{X: current.X - 1, Y: current.Y + 1}, true, false
+	}
+	// and diagonal right
+	if current.X < drawing.Width()-1 && drawing.ValueAt(current.X+1, current.Y+1) == '.' {
+		return collection.Coordinate{X: current.X + 1, Y: current.Y + 1}, true, false
+	}
+
+	// we can not move, so we will rest there
+	return current, false, true
+}
+
 func doSolution1(raw string) int {
 	lines, maxX, maxY := parse(raw)
 	drawing := util.InitDrawingTopToBottom(maxX+1, maxY+1).
@@ -192,9 +237,27 @@ func doSolution1(raw string) int {
 		}
 	}
 
-	fmt.Printf("\ndrawing:\n%s\n", drawing.String())
+	if Debug {
+		fmt.Printf("\n====================== initial drawing:\n%s\n\n", drawing.String())
+	}
 
-	return 0 // fixme
+	var (
+		sandResting = true
+		counter     = 0
+		sandSource  = collection.Coordinate{X: 500, Y: 0}
+	)
+	for sandResting {
+		sandResting = dropSand(drawing, sandSource)
+		if sandResting {
+			counter += 1
+		}
+	}
+
+	if Debug {
+		fmt.Printf("\n====================== final drawing:\n%s\n", drawing.String())
+	}
+
+	return counter
 }
 
 func Solution1() int {
