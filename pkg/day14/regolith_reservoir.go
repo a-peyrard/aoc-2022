@@ -138,9 +138,50 @@ void. Just for fun, the path any new sand takes before falling forever is shown 
 Using your scan, simulate the falling sand. How many units of sand come to rest before sand starts flowing into the
 abyss below?
 
+--- Part Two ---
+
+You realize you misread the scan. There isn't an endless void at the bottom of the scan - there's floor, and you're
+standing on it! You don't have time to scan the floor, so assume the floor is an infinite horizontal line with a y
+coordinate equal to two plus the highest y coordinate of any point in your scan. In the example above, the highest y
+coordinate of any point is 9, and so the floor is at y=11. (This is as if your scan contained one extra rock path like
+-infinity,11 -> infinity,11.) With the added floor, the example above now looks like this:
+
+        ...........+........
+        ....................
+        ....................
+        ....................
+        .........#...##.....
+        .........#...#......
+        .......###...#......
+        .............#......
+        .............#......
+        .....#########......
+        ....................
+<-- etc #################### etc -->
+
+To find somewhere safe to stand, you'll need to simulate falling sand until a unit of sand comes to rest at 500,0,
+blocking the source entirely and stopping the flow of sand into the cave. In the example above, the situation finally
+looks like this after 93 units of sand come to rest:
+
+............o............
+...........ooo...........
+..........ooooo..........
+.........ooooooo.........
+........oo#ooo##o........
+.......ooo#ooo#ooo.......
+......oo###ooo#oooo......
+.....oooo.oooo#ooooo.....
+....oooooooooo#oooooo....
+...ooo#########ooooooo...
+..ooooo.......ooooooooo..
+#########################
+
+Using your scan, simulate the falling sand until the source of the sand becomes blocked. How many units of sand come to
+rest?
+
 */
 
-const Debug = true
+const Debug = false
 
 func parse(input string) ([][]collection.Coordinate, int, int) {
 	var (
@@ -179,7 +220,7 @@ func parseCoordinate(rawCoordinate string) collection.Coordinate {
 	}
 }
 
-func dropSand(drawing *util.Drawing, from collection.Coordinate) bool {
+func dropSand(drawing *util.Drawing, from collection.Coordinate) (collection.Coordinate, bool) {
 	var (
 		next    = from
 		canMove = true
@@ -193,7 +234,7 @@ func dropSand(drawing *util.Drawing, from collection.Coordinate) bool {
 		drawing.DrawAt('o', next.X, next.Y)
 	}
 
-	return canRest
+	return next, canRest
 }
 
 // return is:
@@ -228,6 +269,15 @@ func doSolution1(raw string) int {
 		Fill('.').
 		DrawAt('+', 500, 0)
 
+	return doSolutionGen(lines, drawing, func(_ collection.Coordinate, sandResting bool) bool {
+		return sandResting
+	})
+}
+
+func doSolutionGen(lines [][]collection.Coordinate,
+	drawing *util.Drawing,
+	continueToDrop func(collection.Coordinate, bool) bool) int {
+
 	var start collection.Coordinate
 	for _, line := range lines {
 		start = line[0]
@@ -242,13 +292,13 @@ func doSolution1(raw string) int {
 	}
 
 	var (
-		sandResting = true
-		counter     = 0
-		sandSource  = collection.Coordinate{X: 500, Y: 0}
+		predicateValue = true
+		counter        = 0
+		sandSource     = collection.Coordinate{X: 500, Y: 0}
 	)
-	for sandResting {
-		sandResting = dropSand(drawing, sandSource)
-		if sandResting {
+	for predicateValue {
+		predicateValue = continueToDrop(dropSand(drawing, sandSource))
+		if predicateValue {
 			counter += 1
 		}
 	}
@@ -262,4 +312,22 @@ func doSolution1(raw string) int {
 
 func Solution1() int {
 	return doSolution1(util.GetInputContent())
+}
+
+func doSolution2(raw string) int {
+	lines, _, maxY := parse(raw)
+	drawing := util.InitDrawingTopToBottom(1000, maxY+3).
+		Fill('.').
+		DrawAt('+', 500, 0).
+		DrawLine('#', collection.Coordinate{Y: maxY + 2}, collection.Coordinate{X: 999, Y: maxY + 2})
+
+	sandSource := collection.Coordinate{X: 500, Y: 0}
+
+	return doSolutionGen(lines, drawing, func(lastDrop collection.Coordinate, _ bool) bool {
+		return lastDrop != sandSource
+	}) + 1 // + 1 as we need to count the last sand drop
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent())
 }
