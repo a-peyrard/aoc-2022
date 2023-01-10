@@ -143,17 +143,6 @@ func (sb *sensorAndBeacon) updateMinAndMax(minX, maxX, minY, maxY *int) {
 }
 
 func (sb *sensorAndBeacon) coverageAt(y int) *interval.Interval {
-	/*
-		-------------------S
-
-
-
-		y ==================
-
-
-		y = 5 S = 2 diff = 3
-		y = -2 S = 5
-	*/
 	distanceToRow := util.AbsInt(sb.sensor.Y - y)
 	if distanceToRow > sb.manhattanDistance {
 		return nil // no coverage for this row
