@@ -1,4 +1,4 @@
-package util
+package drawing
 
 import (
 	"aoc2022/pkg/util/collection"

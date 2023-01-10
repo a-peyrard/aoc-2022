@@ -3,6 +3,7 @@ package day10
 import (
 	"aoc2022/pkg/util"
 	"aoc2022/pkg/util/collection"
+	"aoc2022/pkg/util/drawing"
 	"bufio"
 	"fmt"
 	"strconv"
@@ -426,7 +427,7 @@ func Solution1() int {
 }
 
 func doSolution2(raw string) string {
-	drawing := util.InitDrawing(40, 6)
+	drawing := drawing.InitDrawing(40, 6)
 	instructions := parse(raw)
 	r := register{value: 1}
 	var x, y int

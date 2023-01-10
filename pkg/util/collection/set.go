@@ -30,3 +30,7 @@ func (s Set[T]) Values() []T {
 	}
 	return values
 }
+
+func (s Set[T]) Length() int {
+	return len(s)
+}

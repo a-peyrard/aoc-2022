@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"aoc2022/pkg/util/geo"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -34,15 +35,15 @@ func TestSet(t *testing.T) {
 
 	t.Run("it should work with coordinate", func(t *testing.T) {
 		// GIVEN
-		set := NewSet[Coordinate]()
+		set := NewSet[geo.Coordinate]()
 
 		// WHEN & THEN
 
 		// Add some values to the set.
-		set.Add(Coordinate{X: 3, Y: 4})
-		set.Add(Coordinate{X: 5, Y: 7})
+		set.Add(geo.Coordinate{X: 3, Y: 4})
+		set.Add(geo.Coordinate{X: 5, Y: 7})
 
 		// Check if a value is in the set.
-		assert.True(t, set.Contains(Coordinate{X: 3, Y: 4}))
+		assert.True(t, set.Contains(geo.Coordinate{X: 3, Y: 4}))
 	})
 }

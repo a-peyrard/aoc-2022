@@ -2,6 +2,7 @@ package day9
 
 import (
 	"aoc2022/pkg/util"
+	"aoc2022/pkg/util/drawing"
 	"bufio"
 	"fmt"
 	"strconv"
@@ -731,7 +732,7 @@ type rope struct {
 	head    coordinate
 	rest    []coordinate
 	visited map[coordinate]struct{}
-	drawing *util.Drawing
+	drawing *drawing.Drawing
 }
 
 type direction byte
@@ -760,7 +761,7 @@ func initRope(numberOfKnots int) *rope {
 		head:    coordinate{0, 0},
 		rest:    rest,
 		visited: map[coordinate]struct{}{coordinate{0, 0}: {}},
-		drawing: util.InitDrawingWithCenter(50, 50, 25, 25).
+		drawing: drawing.InitDrawingWithCenter(50, 50, 25, 25).
 			Fill('.').
 			DrawAt('s', 0, 0),
 	}

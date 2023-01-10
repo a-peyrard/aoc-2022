@@ -1,11 +1,10 @@
 package collection
 
-type Matrix[T any] [][]T
+import (
+	"aoc2022/pkg/util/geo"
+)
 
-type Coordinate struct {
-	X int
-	Y int
-}
+type Matrix[T any] [][]T
 
 func CreateMatrix[T any](width int, height int, defaultValue T) Matrix[T] {
 	matrix := make([][]T, height)
@@ -23,7 +22,7 @@ func (m *Matrix[T]) ValueAt(x, y int) T {
 	return (*m)[y][x]
 }
 
-func (m *Matrix[T]) ValueAtC(c *Coordinate) T {
+func (m *Matrix[T]) ValueAtC(c *geo.Coordinate) T {
 	return m.ValueAt(c.X, c.Y)
 }
 
@@ -31,7 +30,7 @@ func (m *Matrix[T]) PutAt(x, y int, v T) {
 	(*m)[y][x] = v
 }
 
-func (m *Matrix[T]) PutAtC(c *Coordinate, v T) {
+func (m *Matrix[T]) PutAtC(c *geo.Coordinate, v T) {
 	m.PutAt(c.X, c.Y, v)
 }
 

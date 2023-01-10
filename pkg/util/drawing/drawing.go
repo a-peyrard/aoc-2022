@@ -1,7 +1,9 @@
-package util
+package drawing
 
 import (
+	"aoc2022/pkg/util"
 	"aoc2022/pkg/util/collection"
+	"aoc2022/pkg/util/geo"
 	"fmt"
 	"strings"
 )
@@ -60,6 +62,21 @@ func InitDrawingTopToBottom(width int, height int) *Drawing {
 	}
 }
 
+func InitDrawingTopToBottomWithCenter(width int, height int, centerX int, centerY int) *Drawing {
+	inner := make([][]byte, height)
+	for i := 0; i < height; i++ {
+		inner[i] = make([]byte, width)
+	}
+	return &Drawing{
+		inner:       inner,
+		height:      height,
+		width:       width,
+		centerX:     centerX,
+		centerY:     centerY,
+		bottomToTop: false,
+	}
+}
+
 func (d *Drawing) Height() int {
 	return d.height
 }
@@ -107,7 +124,7 @@ func (d *Drawing) String() string {
 	return sb.String()
 }
 
-func (d *Drawing) DrawLine(char byte, from, to collection.Coordinate) *Drawing {
+func (d *Drawing) DrawLine(char byte, from, to geo.Coordinate) *Drawing {
 	if from.X != to.X && from.Y != to.Y {
 		panic(
 			fmt.Sprintf(
@@ -128,8 +145,8 @@ func (d *Drawing) DrawLine(char byte, from, to collection.Coordinate) *Drawing {
 }
 
 func (d *Drawing) drawVerticalLine(char byte, x int, y1 int, y2 int) *Drawing {
-	min := Min(y1, y2)
-	max := Max(y1, y2)
+	min := util.Min(y1, y2)
+	max := util.Max(y1, y2)
 	for i := min; i < max+1; i++ {
 		d.DrawAt(char, x, i)
 	}
@@ -138,8 +155,8 @@ func (d *Drawing) drawVerticalLine(char byte, x int, y1 int, y2 int) *Drawing {
 }
 
 func (d *Drawing) drawHorizontalLine(char byte, x1 int, x2 int, y int) *Drawing {
-	min := Min(x1, x2)
-	max := Max(x1, x2)
+	min := util.Min(x1, x2)
+	max := util.Max(x1, x2)
 	for i := min; i < max+1; i++ {
 		d.DrawAt(char, i, y)
 	}

@@ -2,7 +2,8 @@ package day14
 
 import (
 	"aoc2022/pkg/util"
-	"aoc2022/pkg/util/collection"
+	"aoc2022/pkg/util/drawing"
+	"aoc2022/pkg/util/geo"
 	"bufio"
 	"fmt"
 	"strings"
@@ -183,10 +184,10 @@ rest?
 
 const Debug = false
 
-func parse(input string) ([][]collection.Coordinate, int, int) {
+func parse(input string) ([][]geo.Coordinate, int, int) {
 	var (
-		res            [][]collection.Coordinate
-		row            []collection.Coordinate
+		res            [][]geo.Coordinate
+		row            []geo.Coordinate
 		line           string
 		rawCoordinates []string
 		maxY, maxX     int
@@ -195,7 +196,7 @@ func parse(input string) ([][]collection.Coordinate, int, int) {
 	for sc.Scan() {
 		line = sc.Text()
 		rawCoordinates = strings.Split(line, " -> ")
-		row = make([]collection.Coordinate, len(rawCoordinates))
+		row = make([]geo.Coordinate, len(rawCoordinates))
 		for i := 0; i < len(rawCoordinates); i++ {
 			coordinate := parseCoordinate(rawCoordinates[i])
 			if maxX < coordinate.X {
@@ -212,15 +213,15 @@ func parse(input string) ([][]collection.Coordinate, int, int) {
 	return res, maxX, maxY
 }
 
-func parseCoordinate(rawCoordinate string) collection.Coordinate {
+func parseCoordinate(rawCoordinate string) geo.Coordinate {
 	tokens := strings.Split(rawCoordinate, ",")
-	return collection.Coordinate{
+	return geo.Coordinate{
 		X: util.UnsafeParseInt(tokens[0]),
 		Y: util.UnsafeParseInt(tokens[1]),
 	}
 }
 
-func dropSand(drawing *util.Drawing, from collection.Coordinate) (collection.Coordinate, bool) {
+func dropSand(drawing *drawing.Drawing, from geo.Coordinate) (geo.Coordinate, bool) {
 	var (
 		next    = from
 		canMove = true
@@ -241,22 +242,22 @@ func dropSand(drawing *util.Drawing, from collection.Coordinate) (collection.Coo
 // - the next coordinate where to go,
 // - can we still move
 // - did we found a place where to rest?
-func advanceSand(drawing *util.Drawing, current collection.Coordinate) (collection.Coordinate, bool, bool) {
+func advanceSand(drawing *drawing.Drawing, current geo.Coordinate) (geo.Coordinate, bool, bool) {
 	if current.Y+1 > drawing.Height()-1 {
 		return current, false, false // we reached the bottom
 	}
 
 	// first try to go down
 	if drawing.ValueAt(current.X, current.Y+1) == '.' {
-		return collection.Coordinate{X: current.X, Y: current.Y + 1}, true, false
+		return geo.Coordinate{X: current.X, Y: current.Y + 1}, true, false
 	}
 	// then try to go diagonal left
 	if current.X > 0 && drawing.ValueAt(current.X-1, current.Y+1) == '.' {
-		return collection.Coordinate{X: current.X - 1, Y: current.Y + 1}, true, false
+		return geo.Coordinate{X: current.X - 1, Y: current.Y + 1}, true, false
 	}
 	// and diagonal right
 	if current.X < drawing.Width()-1 && drawing.ValueAt(current.X+1, current.Y+1) == '.' {
-		return collection.Coordinate{X: current.X + 1, Y: current.Y + 1}, true, false
+		return geo.Coordinate{X: current.X + 1, Y: current.Y + 1}, true, false
 	}
 
 	// we can not move, so we will rest there
@@ -265,20 +266,20 @@ func advanceSand(drawing *util.Drawing, current collection.Coordinate) (collecti
 
 func doSolution1(raw string) int {
 	lines, maxX, maxY := parse(raw)
-	drawing := util.InitDrawingTopToBottom(maxX+1, maxY+1).
+	drawing := drawing.InitDrawingTopToBottom(maxX+1, maxY+1).
 		Fill('.').
 		DrawAt('+', 500, 0)
 
-	return doSolutionGen(lines, drawing, func(_ collection.Coordinate, sandResting bool) bool {
+	return doSolutionGen(lines, drawing, func(_ geo.Coordinate, sandResting bool) bool {
 		return sandResting
 	})
 }
 
-func doSolutionGen(lines [][]collection.Coordinate,
-	drawing *util.Drawing,
-	continueToDrop func(collection.Coordinate, bool) bool) int {
+func doSolutionGen(lines [][]geo.Coordinate,
+	drawing *drawing.Drawing,
+	continueToDrop func(geo.Coordinate, bool) bool) int {
 
-	var start collection.Coordinate
+	var start geo.Coordinate
 	for _, line := range lines {
 		start = line[0]
 		for i := 1; i < len(line); i++ {
@@ -294,7 +295,7 @@ func doSolutionGen(lines [][]collection.Coordinate,
 	var (
 		predicateValue = true
 		counter        = 0
-		sandSource     = collection.Coordinate{X: 500, Y: 0}
+		sandSource     = geo.Coordinate{X: 500, Y: 0}
 	)
 	for predicateValue {
 		predicateValue = continueToDrop(dropSand(drawing, sandSource))
@@ -316,14 +317,14 @@ func Solution1() int {
 
 func doSolution2(raw string) int {
 	lines, _, maxY := parse(raw)
-	drawing := util.InitDrawingTopToBottom(1000, maxY+3).
+	drawing := drawing.InitDrawingTopToBottom(1000, maxY+3).
 		Fill('.').
 		DrawAt('+', 500, 0).
-		DrawLine('#', collection.Coordinate{Y: maxY + 2}, collection.Coordinate{X: 999, Y: maxY + 2})
+		DrawLine('#', geo.Coordinate{Y: maxY + 2}, geo.Coordinate{X: 999, Y: maxY + 2})
 
-	sandSource := collection.Coordinate{X: 500, Y: 0}
+	sandSource := geo.Coordinate{X: 500, Y: 0}
 
-	return doSolutionGen(lines, drawing, func(lastDrop collection.Coordinate, _ bool) bool {
+	return doSolutionGen(lines, drawing, func(lastDrop geo.Coordinate, _ bool) bool {
 		return lastDrop != sandSource
 	}) + 1 // + 1 as we need to count the last sand drop
 }

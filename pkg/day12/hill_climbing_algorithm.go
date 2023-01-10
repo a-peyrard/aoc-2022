@@ -3,6 +3,8 @@ package day12
 import (
 	"aoc2022/pkg/util"
 	"aoc2022/pkg/util/collection"
+	"aoc2022/pkg/util/drawing"
+	"aoc2022/pkg/util/geo"
 	"bufio"
 	"container/heap"
 	"fmt"
@@ -79,7 +81,7 @@ const Debug = false
 
 type heightmap collection.Matrix[byte]
 
-func (h *heightmap) value(c *collection.Coordinate) byte {
+func (h *heightmap) value(c *geo.Coordinate) byte {
 	return h.valueAt(c.X, c.Y)
 }
 
@@ -102,12 +104,12 @@ func (h *heightmap) valueAt(x, y int) byte {
 	return val
 }
 
-func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordinate) {
+func parse(input string) (heightmap, *geo.Coordinate, *geo.Coordinate) {
 	var (
 		res        heightmap
 		line       string
 		row        []byte
-		start, end *collection.Coordinate
+		start, end *geo.Coordinate
 	)
 	sc := bufio.NewScanner(strings.NewReader(input))
 	for sc.Scan() {
@@ -116,9 +118,9 @@ func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordin
 		for i := 0; i < len(line); i++ {
 			row = append(row, line[i])
 			if line[i] == 'S' {
-				start = &collection.Coordinate{X: i, Y: len(res)}
+				start = &geo.Coordinate{X: i, Y: len(res)}
 			} else if line[i] == 'E' {
-				end = &collection.Coordinate{X: i, Y: len(res)}
+				end = &geo.Coordinate{X: i, Y: len(res)}
 			}
 		}
 		res = append(res, row)
@@ -127,26 +129,26 @@ func parse(input string) (heightmap, *collection.Coordinate, *collection.Coordin
 	return res, start, end
 }
 
-func findShortestPath(heightmap heightmap, start *collection.Coordinate, isTarget func(*collection.Coordinate) bool) int {
+func findShortestPath(heightmap heightmap, start *geo.Coordinate, isTarget func(*geo.Coordinate) bool) int {
 	dist := collection.CreateMatrix[int](heightmap.width(), heightmap.height(), math.MaxInt)
 	dist.PutAtC(start, 0)
-	prev := collection.CreateMatrix[*collection.Coordinate](heightmap.width(), heightmap.height(), nil)
+	prev := collection.CreateMatrix[*geo.Coordinate](heightmap.width(), heightmap.height(), nil)
 
-	queue := make(collection.PriorityQueue[*collection.Coordinate], 0)
+	queue := make(collection.PriorityQueue[*geo.Coordinate], 0)
 	heap.Init(&queue)
 
 	heap.Push(&queue, collection.CreateItem(start, dist.ValueAtC(start)))
 
 	var (
-		current   *collection.Item[*collection.Coordinate]
-		neighbors []*collection.Coordinate
+		current   *collection.Item[*geo.Coordinate]
+		neighbors []*geo.Coordinate
 		alt       int
-		target    *collection.Coordinate
+		target    *geo.Coordinate
 	)
 
-	visited := collection.NewSet[collection.Coordinate]()
+	visited := collection.NewSet[geo.Coordinate]()
 	for queue.Len() > 0 {
-		current = heap.Pop(&queue).(*collection.Item[*collection.Coordinate])
+		current = heap.Pop(&queue).(*collection.Item[*geo.Coordinate])
 		visited.Add(*current.GetValue())
 		if isTarget(current.GetValue()) {
 			target = current.GetValue()
@@ -169,7 +171,7 @@ func findShortestPath(heightmap heightmap, start *collection.Coordinate, isTarge
 	}
 
 	if Debug {
-		d := util.DrawMatrix(&dist, func(v, x, y int) byte {
+		d := drawing.DrawMatrix(&dist, func(v, x, y int) byte {
 			character := heightmap.valueAt(x, y)
 			if v == math.MaxInt {
 				return character - 32 // print the letter in upper case
@@ -182,24 +184,24 @@ func findShortestPath(heightmap heightmap, start *collection.Coordinate, isTarge
 	return dist.ValueAtC(target)
 }
 
-func extractNeighbors(heightmap heightmap, c *collection.Coordinate) []*collection.Coordinate {
-	neighbors := make([]*collection.Coordinate, 0)
+func extractNeighbors(heightmap heightmap, c *geo.Coordinate) []*geo.Coordinate {
+	neighbors := make([]*geo.Coordinate, 0)
 	value := heightmap.value(c)
 	// North
 	if c.Y > 0 && isWalkable(heightmap.valueAt(c.X, c.Y-1), value) {
-		neighbors = append(neighbors, &collection.Coordinate{X: c.X, Y: c.Y - 1})
+		neighbors = append(neighbors, &geo.Coordinate{X: c.X, Y: c.Y - 1})
 	}
 	// East
 	if c.X < heightmap.width()-1 && isWalkable(heightmap.valueAt(c.X+1, c.Y), value) {
-		neighbors = append(neighbors, &collection.Coordinate{X: c.X + 1, Y: c.Y})
+		neighbors = append(neighbors, &geo.Coordinate{X: c.X + 1, Y: c.Y})
 	}
 	// South
 	if c.Y < heightmap.height()-1 && isWalkable(heightmap.valueAt(c.X, c.Y+1), value) {
-		neighbors = append(neighbors, &collection.Coordinate{X: c.X, Y: c.Y + 1})
+		neighbors = append(neighbors, &geo.Coordinate{X: c.X, Y: c.Y + 1})
 	}
 	// West
 	if c.X > 0 && isWalkable(heightmap.valueAt(c.X-1, c.Y), value) {
-		neighbors = append(neighbors, &collection.Coordinate{X: c.X - 1, Y: c.Y})
+		neighbors = append(neighbors, &geo.Coordinate{X: c.X - 1, Y: c.Y})
 	}
 
 	return neighbors
@@ -211,7 +213,7 @@ func isWalkable(origin byte, dest byte) bool {
 
 func doSolution1(raw string) int {
 	heightmap, start, end := parse(raw)
-	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+	return findShortestPath(heightmap, end, func(c *geo.Coordinate) bool {
 		return *c == *start
 	})
 }
@@ -222,7 +224,7 @@ func Solution1() int {
 
 func doSolution2(raw string) int {
 	heightmap, _, end := parse(raw)
-	return findShortestPath(heightmap, end, func(c *collection.Coordinate) bool {
+	return findShortestPath(heightmap, end, func(c *geo.Coordinate) bool {
 		return heightmap.value(c) == 'a'
 	})
 }
