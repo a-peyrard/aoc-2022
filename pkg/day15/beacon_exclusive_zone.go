@@ -119,6 +119,16 @@ exist. The coverage from all sensors near that row looks like this:
 In this example, in the row where y=10, there are 26 positions where a beacon cannot be present. Consult the report from
 the sensors you just deployed. In the row where y=2000000, how many positions cannot contain a beacon?
 
+--- Part Two ---
+
+Your handheld device indicates that the distress signal is coming from a beacon nearby. The distress beacon is not
+detected by any sensor, but the distress beacon must have x and y coordinates each no lower than 0 and no larger than
+4000000. To isolate the distress beacon's signal, you need to determine its tuning frequency, which can be found by
+multiplying its x coordinate by 4000000 and then adding its y coordinate. In the example above, the search space is
+smaller: instead, the x and y coordinates can each be at most 20. With this reduced search area, there is only a single
+position that could have a beacon: x=14, y=11. The tuning frequency for this distress beacon is 56000011. Find the only
+possible position for the distress beacon. What is its tuning frequency?
+
 */
 
 const Debug = false
@@ -257,4 +267,55 @@ func doSolution1(raw string, row int) int {
 
 func Solution1() int {
 	return doSolution1(util.GetInputContent(), 2_000_000)
+}
+
+func doSolution2(raw string, maxCoordinate int) int {
+	sbList, _, _, _, _ := parse(raw)
+
+	var (
+		intervals     []*interval.Interval
+		coverage      *interval.Interval
+		availableCell int
+	)
+	for i := 0; i <= maxCoordinate; i++ {
+		intervals = make([]*interval.Interval, 0)
+		for _, sb := range sbList {
+			coverage = sb.coverageAt(i)
+			if coverage != nil {
+				intervals = append(intervals, coverage)
+			}
+		}
+		availableCell = findAvailableCell(interval.MergeIntervals(intervals), maxCoordinate)
+		if availableCell >= 0 {
+			return tuningFrequency(availableCell, i)
+		}
+	}
+
+	panic("Unable to find the beacon position :/")
+}
+
+func findAvailableCell(intervals []*interval.Interval, maxCoordinate int) int {
+	if len(intervals) == 1 {
+		if intervals[0][0] > 0 {
+			return 0
+		}
+		if intervals[0][1] < maxCoordinate {
+			return maxCoordinate
+		}
+	} else {
+		for i := 0; i < len(intervals); i++ {
+			if intervals[i][1] >= 0 && intervals[i][1] < maxCoordinate {
+				return intervals[i][1] + 1
+			}
+		}
+	}
+	return -1
+}
+
+func tuningFrequency(x, y int) int {
+	return x*4000000 + y
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent(), 4_000_000)
 }
