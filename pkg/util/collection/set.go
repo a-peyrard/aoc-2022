@@ -17,6 +17,10 @@ func (s Set[T]) Contains(value T) bool {
 	return ok
 }
 
+func (s Set[T]) DoesNotContain(value T) bool {
+	return !s.Contains(value)
+}
+
 // Remove removes the given value from the set.
 func (s Set[T]) Remove(value T) {
 	delete(s, value)
