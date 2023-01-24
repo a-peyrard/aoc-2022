@@ -7,8 +7,19 @@ func NewSet[T comparable]() Set[T] {
 }
 
 // Add adds the given value to the set.
-func (s Set[T]) Add(value T) {
+func (s Set[T]) Add(value T) Set[T] {
 	s[value] = struct{}{}
+
+	return s
+}
+
+// AddAll adds all the given value to the set.
+func (s Set[T]) AddAll(other Set[T]) Set[T] {
+	for v := range other {
+		s.Add(v)
+	}
+
+	return s
 }
 
 // Contains returns true if the given value is in the set, or false if it is not.

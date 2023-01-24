@@ -120,7 +120,8 @@ func pathMayBeat(bestValue int,
 	elapsedTime int,
 	maxTime int,
 	valvesOrdered []*valve,
-	labelToIndex map[string]int) bool {
+	labelToIndex map[string]int,
+	uselessValves collection.Set[int]) bool {
 
 	maybeValue := currentValue
 	var (
@@ -131,7 +132,7 @@ func pathMayBeat(bestValue int,
 		valveFound = false
 		for _, valve := range valvesOrdered {
 			valveIndex = labelToIndex[valve.label]
-			if !isVisited(path, valveIndex) {
+			if uselessValves.DoesNotContain(valveIndex) && !isVisited(path, valveIndex) {
 				maybeValue += valve.flow * (maxTime - i)
 				valveFound = true
 				path = visit(path, valveIndex)
@@ -160,17 +161,35 @@ func doSolution1(raw string) int {
 	distances := shortestPaths(graph)
 	valvesOrdered := valvesByFlowDesc(valves)
 
-	return findBestPath(distances, valves, valvesOrdered, labelToIndex, indexToLabel, 30)
+	flow, _ := findBestPath(
+		labelToIndex["AA"],
+		distances,
+		valves,
+		valvesOrdered,
+		labelToIndex,
+		indexToLabel,
+		30,
+		collection.NewSet[int](),
+		&map[int]int{},
+		true,
+	)
+
+	return flow
 }
 
-func findBestPath(distances collection.Matrix[int],
+func findBestPath(rootIndex int,
+	distances collection.Matrix[int],
 	valves map[string]*valve,
 	valvesOrdered []*valve,
 	labelToIndex map[string]int,
 	indexToLabel []string,
-	maxTime int) int {
+	maxTime int,
+	forbiddenValves collection.Set[int],
+	bestPaths *map[int]int,
+	shortcut bool) (int, int) {
 
 	uselessValveIndexes := collection.NewSet[int]()
+	uselessValveIndexes.AddAll(forbiddenValves)
 	for i := 0; i < len(indexToLabel); i++ {
 		if valves[indexToLabel[i]].flow == 0 {
 			uselessValveIndexes.Add(i)
@@ -178,10 +197,9 @@ func findBestPath(distances collection.Matrix[int],
 	}
 	// trigger to all first neighbors
 	var (
-		rootIndex   = labelToIndex["AA"]
-		best        = 0
-		path        = visit(0, rootIndex)
-		branchValue int
+		best                      = 0
+		path                      = visit(0, rootIndex)
+		branchValue, usedNeighbor int
 	)
 
 	for neighbor, distance := range distances[rootIndex] {
@@ -199,13 +217,16 @@ func findBestPath(distances collection.Matrix[int],
 				indexToLabel,
 				maxTime,
 				best,
+				bestPaths,
+				shortcut,
 			)
 			if branchValue > best {
 				best = branchValue
+				usedNeighbor = neighbor
 			}
 		}
 	}
-	return best
+	return best, usedNeighbor
 }
 
 func findBestPathRec(current int,
@@ -219,7 +240,9 @@ func findBestPathRec(current int,
 	labelToIndex map[string]int,
 	indexToLabel []string,
 	maxTime int,
-	best int) int {
+	best int,
+	bestPaths *map[int]int,
+	shortcut bool) int {
 
 	if elapsedTime >= maxTime {
 		return value
@@ -232,12 +255,20 @@ func findBestPathRec(current int,
 	elapsedTime += 1
 	value += valves[indexToLabel[current]].flow * (maxTime - elapsedTime)
 
+	currentBest := (*bestPaths)[path]
+	if value > currentBest {
+		(*bestPaths)[path] = value
+	}
+
 	// do a DFS, and don't try to go to valves with 0 flow
-	var branchValue int
+	var (
+		branchValue, localBest int
+	)
 	for next, distance := range distances[current] {
 		if current != next && distance < math.MaxInt && uselessValveIndexes.DoesNotContain(next) {
 			if !isVisited(path, next) &&
-				pathMayBeat(best, path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex) {
+				(!shortcut ||
+					pathMayBeat(util.Max(best, localBest), path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex, uselessValveIndexes)) {
 				branchValue = findBestPathRec(
 					next,
 					path,
@@ -251,17 +282,59 @@ func findBestPathRec(current int,
 					indexToLabel,
 					maxTime,
 					best,
+					bestPaths,
+					shortcut,
 				)
-				if branchValue > best {
-					best = branchValue
+				if branchValue > localBest {
+					localBest = branchValue
 				}
 			}
 		}
 	}
 
-	return util.Max(best, value)
+	return util.Max(localBest, value)
 }
 
 func Solution1() int {
 	return doSolution1(util.GetInputContent())
+}
+
+func doSolution2(raw string) int {
+	valves := parse(raw)
+	graph, labelToIndex, indexToLabel := buildGraph(valves)
+	distances := shortestPaths(graph)
+	valvesOrdered := valvesByFlowDesc(valves)
+	bestPaths := map[int]int{}
+
+	rootIndex := labelToIndex["AA"]
+	findBestPath(
+		rootIndex,
+		distances,
+		valves,
+		valvesOrdered,
+		labelToIndex,
+		indexToLabel,
+		26,
+		collection.NewSet[int](),
+		&bestPaths,
+		false,
+	)
+
+	max := 0
+	mask := 1 << rootIndex
+	for path1, flow1 := range bestPaths {
+		for path2, flow2 := range bestPaths {
+			if path1&path2 == mask {
+				if flow1+flow2 > max {
+					max = flow1 + flow2
+				}
+			}
+		}
+	}
+
+	return max
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent())
 }
