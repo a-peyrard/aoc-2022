@@ -4,12 +4,15 @@ import (
 	"aoc2022/pkg/util"
 	"aoc2022/pkg/util/collection"
 	"bufio"
+	"fmt"
 	"golang.org/x/exp/maps"
 	"math"
 	"regexp"
 	"sort"
 	"strings"
 )
+
+const Debug = true
 
 type valve struct {
 	label  string
@@ -120,7 +123,8 @@ func pathMayBeat(bestValue int,
 	elapsedTime int,
 	maxTime int,
 	valvesOrdered []*valve,
-	labelToIndex map[string]int) bool {
+	labelToIndex map[string]int,
+	uselessValves collection.Set[int]) bool {
 
 	maybeValue := currentValue
 	var (
@@ -131,7 +135,7 @@ func pathMayBeat(bestValue int,
 		valveFound = false
 		for _, valve := range valvesOrdered {
 			valveIndex = labelToIndex[valve.label]
-			if !isVisited(path, valveIndex) {
+			if uselessValves.DoesNotContain(valveIndex) && !isVisited(path, valveIndex) {
 				maybeValue += valve.flow * (maxTime - i)
 				valveFound = true
 				path = visit(path, valveIndex)
@@ -160,17 +164,31 @@ func doSolution1(raw string) int {
 	distances := shortestPaths(graph)
 	valvesOrdered := valvesByFlowDesc(valves)
 
-	return findBestPath(distances, valves, valvesOrdered, labelToIndex, indexToLabel, 30)
+	flow, _ := findBestPath(
+		labelToIndex["AA"],
+		distances,
+		valves,
+		valvesOrdered,
+		labelToIndex,
+		indexToLabel,
+		30,
+		collection.NewSet[int](),
+	)
+
+	return flow
 }
 
-func findBestPath(distances collection.Matrix[int],
+func findBestPath(rootIndex int,
+	distances collection.Matrix[int],
 	valves map[string]*valve,
 	valvesOrdered []*valve,
 	labelToIndex map[string]int,
 	indexToLabel []string,
-	maxTime int) int {
+	maxTime int,
+	forbiddenValves collection.Set[int]) (int, int) {
 
 	uselessValveIndexes := collection.NewSet[int]()
+	uselessValveIndexes.AddAll(forbiddenValves)
 	for i := 0; i < len(indexToLabel); i++ {
 		if valves[indexToLabel[i]].flow == 0 {
 			uselessValveIndexes.Add(i)
@@ -178,10 +196,9 @@ func findBestPath(distances collection.Matrix[int],
 	}
 	// trigger to all first neighbors
 	var (
-		rootIndex   = labelToIndex["AA"]
-		best        = 0
-		path        = visit(0, rootIndex)
-		branchValue int
+		best                      = 0
+		path                      = visit(0, rootIndex)
+		branchValue, usedNeighbor int
 	)
 
 	for neighbor, distance := range distances[rootIndex] {
@@ -202,10 +219,11 @@ func findBestPath(distances collection.Matrix[int],
 			)
 			if branchValue > best {
 				best = branchValue
+				usedNeighbor = neighbor
 			}
 		}
 	}
-	return best
+	return best, usedNeighbor
 }
 
 func findBestPathRec(current int,
@@ -233,11 +251,13 @@ func findBestPathRec(current int,
 	value += valves[indexToLabel[current]].flow * (maxTime - elapsedTime)
 
 	// do a DFS, and don't try to go to valves with 0 flow
-	var branchValue int
+	var (
+		branchValue, localBest int
+	)
 	for next, distance := range distances[current] {
 		if current != next && distance < math.MaxInt && uselessValveIndexes.DoesNotContain(next) {
 			if !isVisited(path, next) &&
-				pathMayBeat(best, path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex) {
+				pathMayBeat(util.Max(best, localBest), path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex, uselessValveIndexes) {
 				branchValue = findBestPathRec(
 					next,
 					path,
@@ -252,16 +272,98 @@ func findBestPathRec(current int,
 					maxTime,
 					best,
 				)
-				if branchValue > best {
-					best = branchValue
+				if branchValue > localBest {
+					localBest = branchValue
 				}
 			}
 		}
 	}
 
-	return util.Max(best, value)
+	return util.Max(localBest, value)
 }
 
 func Solution1() int {
 	return doSolution1(util.GetInputContent())
+}
+
+type runner struct {
+	label    string
+	position int
+	timeLeft int
+	flow     int
+}
+
+func doSolution2(raw string) int {
+	valves := parse(raw)
+	graph, labelToIndex, indexToLabel := buildGraph(valves)
+	distances := shortestPaths(graph)
+	valvesOrdered := valvesByFlowDesc(valves)
+
+	var (
+		currentRunner                      *runner
+		bestFlow, firstUsedValve, distance int
+		me                                 = runner{
+			label:    "me      ",
+			position: labelToIndex["AA"],
+			timeLeft: 26,
+			flow:     0,
+		}
+		elephant = runner{
+			label:    "elephant",
+			position: labelToIndex["AA"],
+			timeLeft: 26,
+			flow:     0,
+		}
+		forbiddenValves = collection.NewSet[int]()
+	)
+	for me.timeLeft > 0 || elephant.timeLeft > 0 {
+		if me.timeLeft >= elephant.timeLeft {
+			currentRunner = &me
+		} else {
+			currentRunner = &elephant
+		}
+		bestFlow, firstUsedValve = findBestPath(
+			currentRunner.position,
+			distances,
+			valves,
+			valvesOrdered,
+			labelToIndex,
+			indexToLabel,
+			currentRunner.timeLeft,
+			forbiddenValves,
+		)
+		if bestFlow == 0 {
+			currentRunner.timeLeft = 0
+		} else {
+			distance = distances[currentRunner.position][firstUsedValve]
+			currentRunner.timeLeft -= distance + 1
+			currentRunner.flow += currentRunner.timeLeft * valves[indexToLabel[firstUsedValve]].flow
+			currentRunner.position = firstUsedValve
+			forbiddenValves.Add(firstUsedValve)
+		}
+
+		if Debug {
+			if bestFlow > 0 {
+				fmt.Printf(
+					"runner %s move to %s (distance %d), with %d time left, current flow is %d\n",
+					currentRunner.label,
+					indexToLabel[firstUsedValve],
+					distance,
+					currentRunner.timeLeft,
+					currentRunner.flow,
+				)
+			} else {
+				fmt.Printf(
+					"runner %s has no more possible steps\n",
+					currentRunner.label,
+				)
+			}
+		}
+	}
+
+	return me.flow + elephant.flow
+}
+
+func Solution2() int {
+	return doSolution2(util.GetInputContent())
 }
