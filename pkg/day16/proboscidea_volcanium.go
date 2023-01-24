@@ -4,15 +4,12 @@ import (
 	"aoc2022/pkg/util"
 	"aoc2022/pkg/util/collection"
 	"bufio"
-	"fmt"
 	"golang.org/x/exp/maps"
 	"math"
 	"regexp"
 	"sort"
 	"strings"
 )
-
-const Debug = true
 
 type valve struct {
 	label  string
@@ -173,6 +170,8 @@ func doSolution1(raw string) int {
 		indexToLabel,
 		30,
 		collection.NewSet[int](),
+		&map[int]int{},
+		true,
 	)
 
 	return flow
@@ -185,7 +184,9 @@ func findBestPath(rootIndex int,
 	labelToIndex map[string]int,
 	indexToLabel []string,
 	maxTime int,
-	forbiddenValves collection.Set[int]) (int, int) {
+	forbiddenValves collection.Set[int],
+	bestPaths *map[int]int,
+	shortcut bool) (int, int) {
 
 	uselessValveIndexes := collection.NewSet[int]()
 	uselessValveIndexes.AddAll(forbiddenValves)
@@ -216,6 +217,8 @@ func findBestPath(rootIndex int,
 				indexToLabel,
 				maxTime,
 				best,
+				bestPaths,
+				shortcut,
 			)
 			if branchValue > best {
 				best = branchValue
@@ -237,7 +240,9 @@ func findBestPathRec(current int,
 	labelToIndex map[string]int,
 	indexToLabel []string,
 	maxTime int,
-	best int) int {
+	best int,
+	bestPaths *map[int]int,
+	shortcut bool) int {
 
 	if elapsedTime >= maxTime {
 		return value
@@ -250,6 +255,11 @@ func findBestPathRec(current int,
 	elapsedTime += 1
 	value += valves[indexToLabel[current]].flow * (maxTime - elapsedTime)
 
+	currentBest := (*bestPaths)[path]
+	if value > currentBest {
+		(*bestPaths)[path] = value
+	}
+
 	// do a DFS, and don't try to go to valves with 0 flow
 	var (
 		branchValue, localBest int
@@ -257,7 +267,8 @@ func findBestPathRec(current int,
 	for next, distance := range distances[current] {
 		if current != next && distance < math.MaxInt && uselessValveIndexes.DoesNotContain(next) {
 			if !isVisited(path, next) &&
-				pathMayBeat(util.Max(best, localBest), path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex, uselessValveIndexes) {
+				(!shortcut ||
+					pathMayBeat(util.Max(best, localBest), path, value, elapsedTime, maxTime, valvesOrdered, labelToIndex, uselessValveIndexes)) {
 				branchValue = findBestPathRec(
 					next,
 					path,
@@ -271,6 +282,8 @@ func findBestPathRec(current int,
 					indexToLabel,
 					maxTime,
 					best,
+					bestPaths,
+					shortcut,
 				)
 				if branchValue > localBest {
 					localBest = branchValue
@@ -286,82 +299,40 @@ func Solution1() int {
 	return doSolution1(util.GetInputContent())
 }
 
-type runner struct {
-	label    string
-	position int
-	timeLeft int
-	flow     int
-}
-
 func doSolution2(raw string) int {
 	valves := parse(raw)
 	graph, labelToIndex, indexToLabel := buildGraph(valves)
 	distances := shortestPaths(graph)
 	valvesOrdered := valvesByFlowDesc(valves)
+	bestPaths := map[int]int{}
 
-	var (
-		currentRunner                      *runner
-		bestFlow, firstUsedValve, distance int
-		me                                 = runner{
-			label:    "me      ",
-			position: labelToIndex["AA"],
-			timeLeft: 26,
-			flow:     0,
-		}
-		elephant = runner{
-			label:    "elephant",
-			position: labelToIndex["AA"],
-			timeLeft: 26,
-			flow:     0,
-		}
-		forbiddenValves = collection.NewSet[int]()
+	rootIndex := labelToIndex["AA"]
+	findBestPath(
+		rootIndex,
+		distances,
+		valves,
+		valvesOrdered,
+		labelToIndex,
+		indexToLabel,
+		26,
+		collection.NewSet[int](),
+		&bestPaths,
+		false,
 	)
-	for me.timeLeft > 0 || elephant.timeLeft > 0 {
-		if me.timeLeft >= elephant.timeLeft {
-			currentRunner = &me
-		} else {
-			currentRunner = &elephant
-		}
-		bestFlow, firstUsedValve = findBestPath(
-			currentRunner.position,
-			distances,
-			valves,
-			valvesOrdered,
-			labelToIndex,
-			indexToLabel,
-			currentRunner.timeLeft,
-			forbiddenValves,
-		)
-		if bestFlow == 0 {
-			currentRunner.timeLeft = 0
-		} else {
-			distance = distances[currentRunner.position][firstUsedValve]
-			currentRunner.timeLeft -= distance + 1
-			currentRunner.flow += currentRunner.timeLeft * valves[indexToLabel[firstUsedValve]].flow
-			currentRunner.position = firstUsedValve
-			forbiddenValves.Add(firstUsedValve)
-		}
 
-		if Debug {
-			if bestFlow > 0 {
-				fmt.Printf(
-					"runner %s move to %s (distance %d), with %d time left, current flow is %d\n",
-					currentRunner.label,
-					indexToLabel[firstUsedValve],
-					distance,
-					currentRunner.timeLeft,
-					currentRunner.flow,
-				)
-			} else {
-				fmt.Printf(
-					"runner %s has no more possible steps\n",
-					currentRunner.label,
-				)
+	max := 0
+	mask := 1 << rootIndex
+	for path1, flow1 := range bestPaths {
+		for path2, flow2 := range bestPaths {
+			if path1&path2 == mask {
+				if flow1+flow2 > max {
+					max = flow1 + flow2
+				}
 			}
 		}
 	}
 
-	return me.flow + elephant.flow
+	return max
 }
 
 func Solution2() int {

@@ -89,7 +89,7 @@ func TestSolution2(t *testing.T) {
 		name string
 		want int
 	}{
-		{"result for solution2", 1873},
+		{"result for solution2", 2425},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
